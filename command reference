@@ -1,0 +1,337 @@
+# 🎤 Voice Assistant - Quick Command Reference
+
+## Wake Word
+**"Assistant"** - Say this to activate the assistant
+
+---
+
+## Weather & Environment
+```
+"What's the weather?"
+"Weather in [city]"
+"Is it going to rain today?"
+"What's the temperature?"
+"Weather forecast"
+```
+
+## News & Information
+```
+"Tell me the news"
+"What's in the news?"
+"News headlines"
+"Business news"
+"Science news"
+"Top news stories"
+```
+
+## Time & Date
+```
+"What time is it?"
+"What's the current time?"
+"What's today's date?"
+"What day is it?"
+"Tell me the date"
+```
+
+## Reminders
+```
+"Remind me [in X minutes/hours]"
+"Remind me [at specific time]"
+"Set a reminder for [task]"
+"Remind me to [action]"
+"Remember to [action] in 30 minutes"
+```
+
+## Timers
+```
+"Set a timer for [duration]"
+"Start a timer for 5 minutes"
+"Timer for [duration]"
+"Set [duration] timer"
+```
+
+## Calculations
+```
+"What is [math expression]?"
+"Calculate [expression]"
+"What's [number] times [number]?"
+"[number] plus [number]"
+```
+
+## Entertainment
+```
+"Tell me a joke"
+"Tell me something funny"
+"Make me laugh"
+"Say something funny"
+```
+
+## Smart Home (Extensible)
+```
+"Turn on the light"
+"Turn off the light"
+"Brightness to [percentage]%"
+"Dim the light to [level]"
+"Set temperature to [degrees]"
+"Lock the door"
+"Unlock the door"
+"Close the garage"
+```
+
+## Music Control (Extensible)
+```
+"Play [song/artist/playlist]"
+"Play my playlist"
+"Pause the music"
+"Stop the music"
+"Next song"
+"Skip"
+"Previous song"
+"Turn up the volume"
+"Volume to [percentage]%"
+```
+
+## Calendar (Extensible)
+```
+"What's my schedule?"
+"What meetings do I have?"
+"Show my calendar"
+"Add an event"
+"Create a meeting"
+"What's on my calendar?"
+```
+
+## Email (Extensible)
+```
+"Check my emails"
+"Do I have any new emails?"
+"Read my latest email"
+"Send an email"
+"Email [person]"
+```
+
+## Conversational
+```
+"How are you?"
+"Hello"
+"Hi"
+"What can you do?"
+"Help"
+"What are your capabilities?"
+"Tell me about yourself"
+```
+
+## System Control (Extensible)
+```
+"Volume [level]"
+"Mute"
+"Unmute"
+"Brightness [level]%"
+"Take a screenshot"
+"Lock my computer"
+"Sleep"
+```
+
+## Advanced Multi-Command
+```
+"What's the weather and tell me the news"
+"Set a reminder and turn on the lights"
+"What time is it and how's my schedule?"
+"Tell me a joke and the weather"
+"Get the news and set a timer"
+```
+
+---
+
+## Pro Tips
+
+### 1. Natural Language
+Use conversational language - the AI understands context:
+```
+✅ "What's the weather like in New York tomorrow?"
+❌ "weather new york tomorrow"
+```
+
+### 2. Context Awareness
+Follow up naturally without repeating:
+```
+Assistant: "It's raining in New York, 45°F"
+You: "Should I bring an umbrella?" 
+(Context: still talking about New York)
+```
+
+### 3. Complex Requests
+Combine multiple commands:
+```
+"What's the weather? If it's sunny, remind me to bring sunscreen"
+```
+
+### 4. Time Expressions
+Various formats are supported:
+```
+"in 5 minutes"
+"at 3 PM"
+"in 2 hours and 30 minutes"
+"tomorrow at 9 AM"
+```
+
+### 5. Numbers & Measurements
+```
+"Set temperature to 72 degrees"
+"Volume to 80 percent"
+"Brightness at 50%"
+"Timer for 10 minutes"
+```
+
+---
+
+## Customization
+
+You can customize:
+
+### Change Wake Word
+Edit `voice_assistant.py` line 119:
+```python
+self.wake_word = "alexa"  # or any word
+```
+
+### Create Custom Commands
+In `advanced_features.py`, use `CustomCommandRegistry`:
+```python
+registry = CustomCommandRegistry()
+registry.register(['your_trigger'], your_handler_function)
+```
+
+### Add New Integrations
+See `extensions_example.py` for templates for:
+- Calendar integration
+- Music control (Spotify)
+- Smart home (IoT)
+- Email
+- Custom commands
+
+---
+
+## Performance Tips
+
+1. **Speak clearly** - Normal conversation pace
+2. **Avoid background noise** - Quieter environment = better recognition
+3. **One command at a time** - Easier for the AI to understand
+4. **Be specific** - "Weather in Boston" is better than "Weather"
+5. **Use recent context** - Follow-up questions work better
+
+---
+
+## Common Responses
+
+| Your Input | Example Response |
+|-----------|-----------------|
+| "What's the weather?" | "Weather in Faridabad: Clear skies, 28°C, Humidity 65%, Wind 5 m/s" |
+| "What time is it?" | "The current time is 3:45 PM" |
+| "Tell me a joke" | "Why don't scientists trust atoms? Because they make up everything!" |
+| "Set reminder" | "Reminder set for 10 minutes from now" |
+| "News" | "Top news: [headline 1], [headline 2], [headline 3]" |
+
+---
+
+## Troubleshooting Commands
+
+If the assistant isn't responding:
+
+1. **Say the wake word clearly** - "Assistant" should be pronounced distinctly
+2. **Check microphone** - Click "Test Command" button to test without wake word
+3. **Speak at normal pace** - Not too fast, not too slow
+4. **Minimize background noise** - Quiet environment helps recognition
+5. **Check internet connection** - Required for speech recognition and APIs
+
+---
+
+## Advanced Usage
+
+### Using With Extensions
+
+Once you add integrations from `extensions_example.py`, use commands like:
+
+```
+"What's my schedule?"          # Requires Calendar integration
+"Play my favorite song"        # Requires Spotify integration
+"Turn on the bedroom light"    # Requires Smart Home integration
+"Read my latest email"         # Requires Email integration
+```
+
+### Custom AI Processing
+
+The assistant uses Claude AI for intelligent processing:
+```
+You: "What's the weather and should I bring an umbrella?"
+Assistant: [Fetches weather, analyzes conditions, gives recommendation]
+```
+
+### Conversation Memory
+
+The assistant remembers context:
+```
+You: "What's the weather in Paris?"
+You: "What about temperature?"  (Understands you mean Paris)
+You: "Should I bring a jacket?" (Still remembers Paris context)
+```
+
+---
+
+## Keyboard Shortcuts (GUI)
+
+| Action | Shortcut |
+|--------|----------|
+| Test Command | Click button or Alt+T |
+| Stop Assistant | Click button or Esc |
+| Quit | Alt+F4 or Cmd+Q |
+
+---
+
+## Examples by Use Case
+
+### Morning Routine
+```
+"Assistant"
+"What's the weather?"
+"Any important emails?"
+"What's my schedule today?"
+"Set a timer for coffee brewing"
+```
+
+### Work Day
+```
+"Assistant"
+"What time is my first meeting?"
+"Remind me about the 2 PM call"
+"Tell me the latest news"
+"Temperature in the office"
+```
+
+### Evening
+```
+"Assistant"
+"Turn off the lights"
+"Lock the doors"
+"Set a reminder for tomorrow"
+"Tell me a joke"
+```
+
+---
+
+## Getting Help
+
+- **Can't hear responses?** Check volume settings
+- **Speech not recognized?** Click "Test Command" and try again
+- **API error?** Check your .env file and internet connection
+- **Wake word not detected?** Speak more clearly
+- **Want to change settings?** Edit `voice_assistant.py` and `advanced_features.py`
+
+---
+
+**Happy voice commanding!** 🎤✨
+
+For more help, see:
+- `SETUP_GUIDE.md` - Detailed setup instructions
+- `README.md` - Complete documentation
+- `extensions_example.py` - How to add new features
