@@ -1,0 +1,407 @@
+"""
+Voice Assistant Extensions & Custom Integrations
+Example code showing how to extend the assistant with custom features
+"""
+
+import os
+import json
+from datetime import datetime
+from advanced_features import CustomCommandRegistry, ReminderManager
+from typing import Dict, List
+
+# ============================================================================
+# Example 1: Calendar Integration (Google Calendar)
+# ============================================================================
+
+class CalendarIntegration:
+    """Integrate with Google Calendar"""
+    
+    def __init__(self, api_key=None):
+        self.api_key = api_key or os.getenv('GOOGLE_CALENDAR_API_KEY')
+        # Requires: pip install google-auth-oauthlib google-auth-httplib2 google-api-python-client
+    
+    def get_upcoming_events(self, max_results=5):
+        """Fetch upcoming calendar events"""
+        # This is a template - implement with Google Calendar API
+        return [
+            {'title': 'Team Meeting', 'time': '2:00 PM'},
+            {'title': 'Code Review', 'time': '3:30 PM'},
+        ]
+    
+    def add_event(self, title: str, time_str: str):
+        """Add event to calendar"""
+        # Template - implement with Google Calendar API
+        return f"Added event '{title}' at {time_str}"
+    
+    def handle_calendar_command(self, command: str) -> str:
+        """Handle calendar-related commands"""
+        if 'my calendar' in command.lower() or 'upcoming' in command.lower():
+            events = self.get_upcoming_events()
+            if events:
+                response = "Your upcoming events: "
+                for event in events:
+                    response += f"{event['title']} at {event['time']}, "
+                return response
+        return None
+
+
+# ============================================================================
+# Example 2: Music Control (Spotify Integration)
+# ============================================================================
+
+class SpotifyIntegration:
+    """Control Spotify playback via voice"""
+    
+    def __init__(self):
+        self.client_id = os.getenv('SPOTIFY_CLIENT_ID')
+        self.client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
+        # Requires: pip install spotipy
+    
+    def play_track(self, track_name: str) -> str:
+        """Play a specific track"""
+        return f"Playing {track_name}"
+    
+    def pause(self) -> str:
+        """Pause playback"""
+        return "Paused"
+    
+    def next_track(self) -> str:
+        """Skip to next track"""
+        return "Skipping to next track"
+    
+    def get_current_track(self) -> str:
+        """Get currently playing track"""
+        return "Now playing: Unknown Track"
+    
+    def handle_music_command(self, command: str) -> str:
+        """Route music commands"""
+        cmd_lower = command.lower()
+        
+        if 'play' in cmd_lower:
+            # Extract song name
+            return self.play_track("requested song")
+        elif 'pause' in cmd_lower or 'stop' in cmd_lower:
+            return self.pause()
+        elif 'next' in cmd_lower or 'skip' in cmd_lower:
+            return self.next_track()
+        elif 'current' in cmd_lower or 'what\' in cmd_lower:
+            return self.get_current_track()
+        
+        return None
+
+
+# ============================================================================
+# Example 3: Smart Home Control (IoT Devices)
+# ============================================================================
+
+class SmartHomeIntegration:
+    """Control smart home devices"""
+    
+    def __init__(self):
+        self.devices = {
+            'light': {'status': 'off', 'brightness': 50},
+            'thermostat': {'temperature': 72, 'mode': 'auto'},
+            'lock': {'status': 'locked'},
+        }
+    
+    def toggle_light(self, brightness=None) -> str:
+        """Toggle smart light"""
+        light = self.devices['light']
+        
+        if brightness:
+            light['brightness'] = min(100, max(0, brightness))
+            light['status'] = 'on'
+            return f"Light set to {light['brightness']}% brightness"
+        else:
+            light['status'] = 'on' if light['status'] == 'off' else 'off'
+            return f"Light turned {light['status'].upper()}"
+    
+    def set_temperature(self, temp: float) -> str:
+        """Set thermostat temperature"""
+        self.devices['thermostat']['temperature'] = temp
+        return f"Thermostat set to {temp} degrees"
+    
+    def lock_door(self) -> str:
+        """Lock the door"""
+        self.devices['lock']['status'] = 'locked'
+        return "Door is now locked"
+    
+    def unlock_door(self) -> str:
+        """Unlock the door"""
+        self.devices['lock']['status'] = 'unlocked'
+        return "Door is now unlocked"
+    
+    def handle_smart_home_command(self, command: str) -> str:
+        """Route smart home commands"""
+        cmd_lower = command.lower()
+        
+        if 'light' in cmd_lower:
+            if 'brightness' in cmd_lower or 'dim' in cmd_lower:
+                # Extract brightness level
+                return self.toggle_light(brightness=75)
+            return self.toggle_light()
+        
+        elif 'temperature' in cmd_lower or 'thermostat' in cmd_lower:
+            return self.set_temperature(72)
+        
+        elif 'lock' in cmd_lower:
+            if 'unlock' in cmd_lower:
+                return self.unlock_door()
+            return self.lock_door()
+        
+        return None
+
+
+# ============================================================================
+# Example 4: Email Integration
+# ============================================================================
+
+class EmailIntegration:
+    """Send and receive emails via voice"""
+    
+    def __init__(self, email, password):
+        self.email = email
+        self.password = password
+        # Requires: pip install secure-smtplib
+    
+    def send_email(self, recipient: str, subject: str, body: str) -> str:
+        """Send an email"""
+        # Template implementation
+        return f"Email sent to {recipient} with subject '{subject}'"
+    
+    def check_unread_emails(self) -> List[str]:
+        """Get unread email summaries"""
+        # Template implementation
+        return [
+            "Email from John about project update",
+            "Email from Sarah about meeting",
+        ]
+    
+    def read_latest_email(self) -> str:
+        """Read the latest email"""
+        return "Latest email from John: The project is on track"
+    
+    def handle_email_command(self, command: str) -> str:
+        """Route email commands"""
+        cmd_lower = command.lower()
+        
+        if 'read email' in cmd_lower or 'check mail' in cmd_lower:
+            emails = self.check_unread_emails()
+            return "You have " + ", ".join(emails)
+        
+        elif 'send email' in cmd_lower:
+            return "Say the recipient, subject, and message"
+        
+        return None
+
+
+# ============================================================================
+# Example 5: Custom Voice Commands with Advanced Parsing
+# ============================================================================
+
+class AdvancedCommandParser:
+    """Parse complex voice commands"""
+    
+    def __init__(self):
+        self.registry = CustomCommandRegistry()
+        self.reminder_manager = ReminderManager()
+        self.setup_custom_commands()
+    
+    def setup_custom_commands(self):
+        """Register custom command handlers"""
+        # Smart reminder parsing
+        self.registry.register(
+            ['remind me', 'set reminder'],
+            self.parse_smart_reminder
+        )
+        
+        # Weather with location
+        self.registry.register(
+            ['weather in'],
+            self.parse_weather_location
+        )
+        
+        # Time calculations
+        self.registry.register(
+            ['how long'],
+            self.parse_duration
+        )
+    
+    @staticmethod
+    def parse_smart_reminder(text: str) -> str:
+        """Parse reminder with natural language"""
+        import re
+        
+        # Extract time and reminder text
+        # "remind me about the meeting in 30 minutes"
+        # "remind me to call mom at 3 PM"
+        
+        time_match = re.search(r'(?:in\s+)?(\d+)\s+(?:minutes?|hours?|days?)', text, re.IGNORECASE)
+        
+        if time_match:
+            duration = time_match.group(1)
+            reminder_text = re.sub(r'remind me (?:to|about|of)?\s*', '', text, flags=re.IGNORECASE)
+            return f"Reminder set: '{reminder_text}' in {duration} minutes"
+        
+        return "I didn't understand the reminder time"
+    
+    @staticmethod
+    def parse_weather_location(text: str) -> str:
+        """Parse weather for specific location"""
+        import re
+        
+        # "what's the weather in New York"
+        location_match = re.search(r'in\s+([A-Za-z\s]+?)(?:\?|$)', text)
+        
+        if location_match:
+            location = location_match.group(1).strip()
+            return f"Fetching weather for {location}"
+        
+        return "Please specify a location"
+    
+    @staticmethod
+    def parse_duration(text: str) -> str:
+        """Calculate duration between two times"""
+        import re
+        from datetime import datetime
+        
+        # "how long until 5 PM" or "how long from now to tomorrow"
+        # This would require more sophisticated parsing
+        return "Duration calculation feature"
+
+
+# ============================================================================
+# Example 6: Data-Driven Custom Commands (JSON Configuration)
+# ============================================================================
+
+class JSONCommandLoader:
+    """Load commands from JSON configuration"""
+    
+    EXAMPLE_CONFIG = {
+        "commands": [
+            {
+                "triggers": ["my schedule", "what's my day"],
+                "handler": "get_day_summary",
+                "response": "You have 5 meetings today"
+            },
+            {
+                "triggers": ["favorite song", "play my music"],
+                "handler": "play_favorite",
+                "response": "Playing your favorite playlist"
+            },
+            {
+                "triggers": ["status report"],
+                "handler": "generate_report",
+                "response": "Generating daily status report"
+            }
+        ]
+    }
+    
+    def __init__(self, config_file: str = None):
+        self.config = self.EXAMPLE_CONFIG
+        if config_file and os.path.exists(config_file):
+            self.load_from_file(config_file)
+    
+    def load_from_file(self, config_file: str):
+        """Load commands from JSON file"""
+        try:
+            with open(config_file, 'r') as f:
+                self.config = json.load(f)
+        except Exception as e:
+            print(f"Error loading config: {e}")
+    
+    def get_handler(self, user_input: str) -> Dict:
+        """Find matching command handler"""
+        user_input_lower = user_input.lower()
+        
+        for command in self.config.get('commands', []):
+            for trigger in command.get('triggers', []):
+                if trigger.lower() in user_input_lower:
+                    return command
+        
+        return None
+    
+    def execute_command(self, user_input: str) -> str:
+        """Execute command if found"""
+        handler = self.get_handler(user_input)
+        
+        if handler:
+            # In a real implementation, this would call actual handlers
+            return handler.get('response', 'Command executed')
+        
+        return None
+
+
+# ============================================================================
+# Integration Helper - Combine All Features
+# ============================================================================
+
+class IntegratedAssistant:
+    """Unified assistant with all integrations"""
+    
+    def __init__(self):
+        self.calendar = CalendarIntegration()
+        self.spotify = SpotifyIntegration()
+        self.smart_home = SmartHomeIntegration()
+        self.email = EmailIntegration("user@email.com", "password")
+        self.command_parser = AdvancedCommandParser()
+        self.json_commands = JSONCommandLoader()
+    
+    def process_command(self, user_input: str) -> str:
+        """Process command through all integrations"""
+        
+        # Try each integration in order of priority
+        handlers = [
+            self.calendar.handle_calendar_command,
+            self.spotify.handle_music_command,
+            self.smart_home.handle_smart_home_command,
+            self.email.handle_email_command,
+        ]
+        
+        for handler in handlers:
+            result = handler(user_input)
+            if result:
+                return result
+        
+        # Try JSON-based commands
+        result = self.json_commands.execute_command(user_input)
+        if result:
+            return result
+        
+        # Default: return None (let main assistant handle it)
+        return None
+
+
+# ============================================================================
+# Quick Start Example
+# ============================================================================
+
+if __name__ == '__main__':
+    print("Voice Assistant Extensions & Integrations")
+    print("=" * 50)
+    
+    # Example: Smart Home Control
+    print("\n1. Smart Home Control:")
+    smart_home = SmartHomeIntegration()
+    print("  ", smart_home.toggle_light())
+    print("  ", smart_home.set_temperature(74))
+    print("  ", smart_home.lock_door())
+    
+    # Example: Music Control
+    print("\n2. Music Control:")
+    spotify = SpotifyIntegration()
+    print("  ", spotify.play_track("Bohemian Rhapsody"))
+    print("  ", spotify.next_track())
+    
+    # Example: Advanced Command Parser
+    print("\n3. Smart Reminder Parsing:")
+    parser = AdvancedCommandParser()
+    print("  ", parser.parse_smart_reminder("remind me about the meeting in 30 minutes"))
+    
+    # Example: Unified Integration
+    print("\n4. Integrated Assistant:")
+    assistant = IntegratedAssistant()
+    print("  ", assistant.process_command("turn on the light"))
+    print("  ", assistant.process_command("play my favorite song"))
+    
+    print("\n✨ Integration examples complete!")
