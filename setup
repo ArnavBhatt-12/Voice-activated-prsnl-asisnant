@@ -1,0 +1,264 @@
+#!/usr/bin/env python3
+"""
+Voice Assistant Setup Script
+Interactive installation and configuration wizard
+"""
+
+import os
+import sys
+import subprocess
+import platform
+from pathlib import Path
+
+
+class SetupWizard:
+    """Interactive setup wizard for Voice Assistant"""
+    
+    def __init__(self):
+        self.platform = platform.system()
+        self.python_version = sys.version_info
+        self.config_dir = Path.home() / '.voice_assistant'
+        self.env_file = Path('.env')
+    
+    def print_header(self):
+        """Print welcome header"""
+        print("""
+╔════════════════════════════════════════════════════════════════╗
+║                  Voice Assistant Setup Wizard                  ║
+║                    Let's get you started! 🎤                   ║
+╚════════════════════════════════════════════════════════════════╝
+        """)
+    
+    def check_python_version(self) -> bool:
+        """Check if Python version is compatible"""
+        if self.python_version.major == 3 and self.python_version.minor >= 8:
+            print(f"✅ Python version: {self.python_version.major}.{self.python_version.minor}")
+            return True
+        else:
+            print(f"❌ Python 3.8+ required (you have {self.python_version.major}.{self.python_version.minor})")
+            return False
+    
+    def install_dependencies(self) -> bool:
+        """Install Python dependencies"""
+        print("\n📦 Installing Python dependencies...")
+        print("This may take a few minutes...\n")
+        
+        try:
+            subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-r', 'requirements.txt'])
+            print("✅ Dependencies installed successfully")
+            return True
+        except subprocess.CalledProcessError:
+            print("❌ Failed to install dependencies")
+            return False
+    
+    def install_system_dependencies(self) -> bool:
+        """Install system-level dependencies"""
+        print("\n🔧 Checking system dependencies...")
+        
+        if self.platform == 'Darwin':  # macOS
+            return self.install_macos_deps()
+        elif self.platform == 'Linux':
+            return self.install_linux_deps()
+        elif self.platform == 'Windows':
+            print("✅ Windows detected - no additional system dependencies needed")
+            return True
+        
+        return True
+    
+    def install_macos_deps(self) -> bool:
+        """Install macOS dependencies"""
+        print("🍎 macOS detected. Installing dependencies...")
+        
+        try:
+            # Check if Homebrew is installed
+            subprocess.run(['brew', '--version'], capture_output=True, check=True)
+        except:
+            print("📥 Please install Homebrew first: https://brew.sh")
+            return False
+        
+        # Install espeak for TTS
+        print("Installing espeak for text-to-speech...")
+        try:
+            subprocess.run(['brew', 'install', 'espeak'], capture_output=True, check=True)
+            print("✅ espeak installed")
+        except subprocess.CalledProcessError:
+            print("⚠️  Could not install espeak (optional)")
+        
+        return True
+    
+    def install_linux_deps(self) -> bool:
+        """Install Linux dependencies"""
+        print("🐧 Linux detected. Installing dependencies...")
+        
+        print("Installing required system packages...")
+        try:
+            subprocess.run(['sudo', 'apt-get', 'update'], capture_output=True, check=False)
+            subprocess.run(['sudo', 'apt-get', 'install', '-y', 'espeak', 'python3-dev'], 
+                         capture_output=True, check=False)
+            print("✅ System dependencies installed")
+            return True
+        except Exception as e:
+            print(f"⚠️  Could not install system dependencies: {e}")
+            return False
+    
+    def get_api_keys(self):
+        """Interactive API key collection"""
+        print("\n🔑 API Configuration")
+        print("=" * 60)
+        
+        api_keys = {}
+        
+        # Anthropic API Key
+        print("\n1️⃣  Anthropic API Key (Claude)")
+        print("   Get it from: https://console.anthropic.com/")
+        anthropic_key = input("   Enter your Anthropic API key (or press Enter to skip): ").strip()
+        if anthropic_key:
+            api_keys['ANTHROPIC_API_KEY'] = anthropic_key
+        else:
+            print("   ⚠️  Skipped (required for full functionality)")
+        
+        # Weather API
+        print("\n2️⃣  OpenWeather API Key (Weather feature)")
+        print("   Get free key: https://openweathermap.org/api")
+        weather_key = input("   Enter your Weather API key (or press Enter to skip): ").strip()
+        if weather_key:
+            api_keys['WEATHER_API_KEY'] = weather_key
+        else:
+            print("   ⚠️  Skipped (weather feature will be disabled)")
+        
+        # News API
+        print("\n3️⃣  NewsAPI Key (News feature)")
+        print("   Get free key: https://newsapi.org/")
+        news_key = input("   Enter your News API key (or press Enter to skip): ").strip()
+        if news_key:
+            api_keys['NEWS_API_KEY'] = news_key
+        else:
+            print("   ⚠️  Skipped (news feature will be disabled)")
+        
+        return api_keys
+    
+    def save_env_file(self, api_keys: dict):
+        """Save API keys to .env file"""
+        if not api_keys:
+            print("\n⚠️  No API keys provided")
+            return False
+        
+        print("\n💾 Saving configuration...")
+        
+        try:
+            with open(self.env_file, 'w') as f:
+                for key, value in api_keys.items():
+                    f.write(f"{key}={value}\n")
+            
+            print(f"✅ Configuration saved to {self.env_file}")
+            return True
+        except Exception as e:
+            print(f"❌ Failed to save configuration: {e}")
+            return False
+    
+    def test_microphone(self) -> bool:
+        """Test microphone connectivity"""
+        print("\n🎤 Testing microphone...")
+        
+        try:
+            import speech_recognition as sr
+            
+            recognizer = sr.Recognizer()
+            microphone = sr.Microphone()
+            
+            with microphone as source:
+                print("   Calibrating for ambient noise (3 seconds)...")
+                recognizer.adjust_for_ambient_noise(source, duration=3)
+                print("   ✅ Microphone detected and working!")
+            
+            return True
+        except Exception as e:
+            print(f"   ❌ Microphone error: {e}")
+            print("   Please check your audio settings")
+            return False
+    
+    def create_config_directory(self):
+        """Create configuration directory"""
+        try:
+            self.config_dir.mkdir(parents=True, exist_ok=True)
+            print(f"✅ Config directory created: {self.config_dir}")
+        except Exception as e:
+            print(f"❌ Failed to create config directory: {e}")
+    
+    def run(self):
+        """Run the complete setup wizard"""
+        self.print_header()
+        
+        # Version check
+        if not self.check_python_version():
+            print("\n❌ Setup cannot continue")
+            return False
+        
+        # System dependencies
+        if not self.install_system_dependencies():
+            print("⚠️  Some system dependencies couldn't be installed")
+            print("   You may need to install them manually")
+        
+        # Python dependencies
+        if not self.install_dependencies():
+            return False
+        
+        # Create config directory
+        self.create_config_directory()
+        
+        # Get API keys
+        api_keys = self.get_api_keys()
+        
+        # Save configuration
+        if api_keys:
+            self.save_env_file(api_keys)
+        
+        # Test microphone
+        self.test_microphone()
+        
+        # Summary
+        self.print_summary()
+        
+        return True
+    
+    def print_summary(self):
+        """Print setup summary"""
+        print("""
+╔════════════════════════════════════════════════════════════════╗
+║                    Setup Complete! 🎉                          ║
+├════════════════════════════════════════════════════════════════┤
+║                                                                ║
+║  Your Voice Assistant is ready to use!                        ║
+║                                                                ║
+║  Next steps:                                                   ║
+║  1. Run: python voice_assistant.py                            ║
+║  2. Say "Assistant" to wake up the app                        ║
+║  3. Speak your commands clearly                               ║
+║                                                                ║
+║  Example commands:                                             ║
+║  • "What's the weather?"                                       ║
+║  • "Tell me the news"                                          ║
+║  • "What time is it?"                                          ║
+║  • "Set a reminder for later"                                  ║
+║  • "Tell me a joke"                                            ║
+║                                                                ║
+║  📖 For more info, read SETUP_GUIDE.md                         ║
+║                                                                ║
+╚════════════════════════════════════════════════════════════════╝
+        """)
+
+
+def main():
+    """Main entry point"""
+    wizard = SetupWizard()
+    
+    if wizard.run():
+        print("\n✨ Setup successful! Happy voice commanding!")
+        sys.exit(0)
+    else:
+        print("\n❌ Setup failed. Please check the errors above.")
+        sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()
