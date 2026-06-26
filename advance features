@@ -1,0 +1,366 @@
+"""
+Advanced Features for Voice Assistant
+Custom commands, reminders, and extensibility
+"""
+
+import json
+import os
+from datetime import datetime, timedelta
+from typing import Dict, List, Callable
+import subprocess
+import re
+
+class CustomCommandRegistry:
+    """Registry for custom voice commands"""
+    
+    def __init__(self):
+        self.commands: Dict[str, Callable] = {}
+        self.load_default_commands()
+    
+    def register(self, trigger_words: List[str], handler: Callable):
+        """Register a custom command"""
+        for word in trigger_words:
+            self.commands[word.lower()] = handler
+    
+    def find_command(self, text: str) -> tuple:
+        """Find matching command for given text"""
+        text_lower = text.lower()
+        
+        for trigger, handler in self.commands.items():
+            if trigger in text_lower:
+                return handler, trigger
+        
+        return None, None
+    
+    def execute(self, text: str) -> str:
+        """Execute command if found"""
+        handler, trigger = self.find_command(text)
+        
+        if handler:
+            try:
+                return handler(text)
+            except Exception as e:
+                return f"Error executing command: {str(e)}"
+        
+        return None
+    
+    def load_default_commands(self):
+        """Load default command handlers"""
+        # System commands
+        self.register(['quit', 'exit', 'close'], self.cmd_quit)
+        self.register(['volume', 'sound'], self.cmd_volume)
+        self.register(['brightness'], self.cmd_brightness)
+        self.register(['screenshot'], self.cmd_screenshot)
+        
+        # Application launchers (cross-platform)
+        self.register(['open spotify', 'play music'], self.cmd_open_app('Spotify'))
+        self.register(['open browser', 'chrome', 'safari'], self.cmd_open_app('Browser'))
+        self.register(['open calculator'], self.cmd_open_app('Calculator'))
+        self.register(['open notes'], self.cmd_open_app('Notes'))
+        
+        # Joke command
+        self.register(['joke', 'tell joke', 'funny'], self.cmd_joke)
+        
+        # Calculator
+        self.register(['calculate', 'what is'], self.cmd_calculate)
+        
+        # Wikipedia/Definition
+        self.register(['define', 'what is'], self.cmd_define)
+    
+    @staticmethod
+    def cmd_quit(text):
+        return "Shutting down the assistant. Goodbye!"
+    
+    @staticmethod
+    def cmd_volume(text):
+        # Parse volume level
+        match = re.search(r'(\d+)\s*(?:percent|%)?', text)
+        if match:
+            level = match.group(1)
+            return f"Setting volume to {level} percent"
+        return "Please specify a volume level"
+    
+    @staticmethod
+    def cmd_brightness(text):
+        match = re.search(r'(\d+)\s*(?:percent|%)?', text)
+        if match:
+            level = match.group(1)
+            return f"Setting brightness to {level} percent"
+        return "Please specify a brightness level"
+    
+    @staticmethod
+    def cmd_screenshot(text):
+        try:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"screenshot_{timestamp}.png"
+            # This is a placeholder - actual implementation varies by OS
+            return f"Screenshot saved as {filename}"
+        except Exception as e:
+            return f"Could not take screenshot: {str(e)}"
+    
+    @staticmethod
+    def cmd_open_app(app_name):
+        """Factory function for opening applications"""
+        def handler(text):
+            try:
+                if os.name == 'posix':  # macOS/Linux
+                    subprocess.Popen(['open', '-a', app_name])
+                elif os.name == 'nt':  # Windows
+                    subprocess.Popen(app_name)
+                return f"Opening {app_name}"
+            except Exception as e:
+                return f"Could not open {app_name}: {str(e)}"
+        return handler
+    
+    @staticmethod
+    def cmd_joke(text):
+        jokes = [
+            "Why don't scientists trust atoms? Because they make up everything!",
+            "What do you call a fake noodle? An impasta!",
+            "Why did the scarecrow win an award? Because he was outstanding in his field!",
+            "What do you call a bear with no teeth? A gummy bear!",
+            "How do you organize a space party? You planet!",
+            "Why don't eggs tell jokes? They'd crack each other up!",
+            "What did the ocean say to the beach? Nothing, it just waved!",
+            "Why don't skeletons fight each other? They don't have the guts!",
+        ]
+        import random
+        return random.choice(jokes)
+    
+    @staticmethod
+    def cmd_calculate(text):
+        """Simple mathematical calculation"""
+        try:
+            # Extract the math expression
+            match = re.search(r'(?:calculate|what is)\s+(.+?)(?:\?|$)', text, re.IGNORECASE)
+            if match:
+                expression = match.group(1).strip()
+                # Simple eval with safety check
+                if all(c in '0123456789+-*/.()% ' for c in expression):
+                    result = eval(expression.replace('%', '/100*'))
+                    return f"The answer is {result}"
+        except:
+            pass
+        return "I couldn't calculate that"
+    
+    @staticmethod
+    def cmd_define(text):
+        """Get definition (would require API in real implementation)"""
+        match = re.search(r'(?:define|what is)\s+(.+?)(?:\?|$)', text, re.IGNORECASE)
+        if match:
+            word = match.group(1).strip()
+            # Placeholder - would use external API
+            return f"Definition lookup for '{word}' would require a dictionary API"
+        return "Please specify what you want defined"
+
+
+class ReminderManager:
+    """Advanced reminder management"""
+    
+    def __init__(self):
+        self.reminders: List[Dict] = []
+        self.load_reminders()
+    
+    def add_reminder(self, text: str, trigger_time: datetime, recurring: str = None):
+        """Add a new reminder"""
+        reminder = {
+            'id': len(self.reminders),
+            'text': text,
+            'trigger_time': trigger_time.isoformat(),
+            'recurring': recurring,  # 'daily', 'weekly', 'monthly', None
+            'notified': False,
+            'created': datetime.now().isoformat()
+        }
+        self.reminders.append(reminder)
+        self.save_reminders()
+        return reminder['id']
+    
+    def parse_time_expression(self, text: str) -> datetime:
+        """Parse natural language time expressions"""
+        now = datetime.now()
+        text_lower = text.lower()
+        
+        # Minutes
+        match = re.search(r'(\d+)\s*(?:minutes?|mins?)', text_lower)
+        if match:
+            minutes = int(match.group(1))
+            return now + timedelta(minutes=minutes)
+        
+        # Hours
+        match = re.search(r'(\d+)\s*(?:hours?|hrs?)', text_lower)
+        if match:
+            hours = int(match.group(1))
+            return now + timedelta(hours=hours)
+        
+        # Specific time (e.g., "3:30 PM")
+        match = re.search(r'(\d{1,2}):(\d{2})\s*(am|pm)?', text_lower)
+        if match:
+            hour = int(match.group(1))
+            minute = int(match.group(2))
+            period = match.group(3)
+            
+            if period == 'pm' and hour != 12:
+                hour += 12
+            elif period == 'am' and hour == 12:
+                hour = 0
+            
+            remind_time = now.replace(hour=hour, minute=minute, second=0)
+            
+            # If time has passed today, schedule for tomorrow
+            if remind_time < now:
+                remind_time += timedelta(days=1)
+            
+            return remind_time
+        
+        # Default to 10 minutes
+        return now + timedelta(minutes=10)
+    
+    def get_upcoming(self) -> List[Dict]:
+        """Get upcoming reminders"""
+        now = datetime.now()
+        return [r for r in self.reminders 
+                if datetime.fromisoformat(r['trigger_time']) > now
+                and not r['notified']]
+    
+    def check_due_reminders(self) -> List[str]:
+        """Check for reminders that are due"""
+        now = datetime.now()
+        due_reminders = []
+        
+        for reminder in self.reminders:
+            trigger = datetime.fromisoformat(reminder['trigger_time'])
+            
+            # 1 minute window
+            if now >= trigger and (now - trigger).total_seconds() < 60 and not reminder['notified']:
+                due_reminders.append(reminder['text'])
+                reminder['notified'] = True
+        
+        if due_reminders:
+            self.save_reminders()
+        
+        return due_reminders
+    
+    def save_reminders(self):
+        """Persist reminders to JSON"""
+        config_dir = os.path.expanduser('~/.voice_assistant')
+        os.makedirs(config_dir, exist_ok=True)
+        
+        with open(os.path.join(config_dir, 'reminders.json'), 'w') as f:
+            json.dump(self.reminders, f, indent=2)
+    
+    def load_reminders(self):
+        """Load reminders from JSON"""
+        config_dir = os.path.expanduser('~/.voice_assistant')
+        reminders_file = os.path.join(config_dir, 'reminders.json')
+        
+        if os.path.exists(reminders_file):
+            try:
+                with open(reminders_file, 'r') as f:
+                    self.reminders = json.load(f)
+            except:
+                self.reminders = []
+
+
+class AssistantConfig:
+    """Configuration management"""
+    
+    DEFAULT_CONFIG = {
+        'wake_word': 'assistant',
+        'speech_rate': 150,
+        'mic_noise_adjustment_duration': 1,
+        'command_timeout': 10,
+        'auto_speak_responses': True,
+        'language': 'en-US',
+        'enable_context_awareness': True,
+        'max_conversation_history': 20,
+        'theme': 'dark',
+    }
+    
+    def __init__(self):
+        self.config = self.DEFAULT_CONFIG.copy()
+        self.load_config()
+    
+    def load_config(self):
+        """Load configuration from file"""
+        config_file = os.path.expanduser('~/.voice_assistant/config.json')
+        
+        if os.path.exists(config_file):
+            try:
+                with open(config_file, 'r') as f:
+                    loaded = json.load(f)
+                    self.config.update(loaded)
+            except:
+                pass
+    
+    def save_config(self):
+        """Save configuration to file"""
+        config_dir = os.path.expanduser('~/.voice_assistant')
+        os.makedirs(config_dir, exist_ok=True)
+        
+        config_file = os.path.join(config_dir, 'config.json')
+        with open(config_file, 'w') as f:
+            json.dump(self.config, f, indent=2)
+    
+    def get(self, key: str, default=None):
+        """Get configuration value"""
+        return self.config.get(key, default)
+    
+    def set(self, key: str, value):
+        """Set configuration value"""
+        self.config[key] = value
+        self.save_config()
+
+
+class ConversationContextManager:
+    """Manage conversation context and history"""
+    
+    def __init__(self, max_history=20):
+        self.history: List[Dict] = []
+        self.max_history = max_history
+        self.context_tags: Dict[str, str] = {}
+    
+    def add_message(self, role: str, content: str):
+        """Add message to history"""
+        self.history.append({
+            'role': role,
+            'content': content,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+        # Keep history size manageable
+        if len(self.history) > self.max_history:
+            self.history = self.history[-self.max_history:]
+    
+    def get_context_summary(self) -> str:
+        """Get summary of recent context"""
+        if not self.history:
+            return "No recent conversation history"
+        
+        recent = self.history[-5:]
+        summary = "Recent context:\n"
+        for msg in recent:
+            role = "User" if msg['role'] == 'user' else "Assistant"
+            summary += f"- {role}: {msg['content'][:50]}...\n"
+        
+        return summary
+    
+    def clear_history(self):
+        """Clear conversation history"""
+        self.history = []
+    
+    def set_context_tag(self, tag: str, value: str):
+        """Set contextual information"""
+        self.context_tags[tag] = value
+    
+    def get_context_tags(self) -> Dict[str, str]:
+        """Get all context tags"""
+        return self.context_tags.copy()
+
+
+# Export classes
+__all__ = [
+    'CustomCommandRegistry',
+    'ReminderManager',
+    'AssistantConfig',
+    'ConversationContextManager',
+]
